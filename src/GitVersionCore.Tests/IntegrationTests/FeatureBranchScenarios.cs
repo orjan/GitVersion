@@ -170,4 +170,62 @@ public class FeatureBranchScenarios
             fixture.AssertFullSemver("1.2.0-longrunning.2");
         }
     }
+
+
+    [Test]
+    public void ShouldBePossibleToWorkWithEpicFeatureBranches()
+    {
+        using (var fixture = new EmptyRepositoryFixture(new Config()
+        {
+            VersioningMode = VersioningMode.ContinuousDelivery
+        }))
+        {
+            fixture.Repository.MakeATaggedCommit("v1.0.0");
+
+            fixture.Repository.CreateBranch("develop");
+            fixture.Repository.Checkout("develop");
+
+            fixture.Repository.CreateBranch("feature/epic");
+            fixture.Repository.Checkout("feature/epic");
+
+            fixture.Repository.CreateBranch("feature/epic-part1");
+            fixture.Repository.Checkout("feature/epic-part1");
+            fixture.Repository.MakeACommit();
+            fixture.Repository.MakeACommit();
+            fixture.AssertFullSemver("1.1.0-epic-part1.1+2");
+
+            fixture.Repository.Checkout("feature/epic");
+            fixture.Repository.CreateBranch("feature/epic-part2");
+            fixture.Repository.Checkout("feature/epic-part2");
+            fixture.Repository.MakeACommit();
+            fixture.Repository.MakeACommit();
+            fixture.Repository.MakeACommit();
+            fixture.AssertFullSemver("1.1.0-epic-part2.1+3");
+
+            fixture.Repository.Checkout("feature/epic");
+            fixture.Repository.MergeNoFF("feature/epic-part2");
+
+            fixture.Repository.Checkout("feature/epic-part1");
+            fixture.Repository.MergeNoFF("feature/epic");
+            fixture.AssertFullSemver("1.1.0-epic-part1.1+7");
+
+            fixture.Repository.DumpGraph();
+/*
+
+*   595fc7d 46 minutes ago  (HEAD -> feature/epic-part1)
+|\  
+| *   045e72d 47 minutes ago  (feature/epic)
+| |\  
+| | * cf4fb8e 48 minutes ago  (feature/epic-part2)
+| | * c92fab8 50 minutes ago 
+| | * f01fe7c 52 minutes ago 
+| |/  
+* | 7948dab 54 minutes ago 
+* | 19ba7a0 56 minutes ago 
+|/  
+* 3c5380e 58 minutes ago  (tag: v1.0.0, master, develop)            
+        
+*/
+        }
+    }
 }
